@@ -17,21 +17,21 @@ class AuthController {
       //validate input
       const { error } = signupSchema.validate(req.body);
       if (error) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
+        res.status(StatusCodes.BAD_REQUEST).json({
           message: error.details[0].message,
         });
       }
-
       //check if user exist
       let user = await Users.findOne({ email });
 
-      if (user && !user.emailVerified) {
-        const { email, telephone, emailVerified, phoneVerified } = user?.toObject();
-        res.status(StatusCodes.OK).json({
-          message: "User already exists but email is not verified. Please verify email",
-          user: { email, telephone, emailVerified, phoneVerified },
-        });
-        // res.status(StatusCodes.CONFLICT).json({ message: "User already exists." });
+      if (user) {
+        if (!user.emailVerified) {
+          const { email, telephone, emailVerified, phoneVerified } = user?.toObject();
+          res.status(StatusCodes.OK).json({
+            message: "User already exists but email is not verified. Please verify email",
+            user: { email, telephone, emailVerified, phoneVerified },
+          });
+        }
       }
 
       user = await Users.create({ ...req.body });
@@ -69,15 +69,7 @@ class AuthController {
           },
         });
       }
-    } catch (error) {
-      await session.abortTransaction();
-      console.error("Signup Error:", error);
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        message: "An error occurred during signup. Please try again.",
-      });
-    } finally {
-      session.endSession();
-    }
+    } catch (error) {}
   };
 
   public login = (req: Request, res: Response) => {
